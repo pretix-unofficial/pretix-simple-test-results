@@ -1,13 +1,12 @@
 from django import forms
 from django.conf import settings
-from django.db.models import Q, Exists, OuterRef, Subquery, Max
+from django.db.models import Exists, Max, OuterRef, Q, Subquery
 from django.db.models.functions import Upper
 from django.utils.translation import gettext_lazy as _
 from i18nfield.forms import I18nFormField, I18nTextarea, I18nTextInput
-
 from pretix.base.email import get_available_placeholders
 from pretix.base.forms import PlaceholderValidator, SettingsForm
-from pretix.base.models import QuestionAnswer, Checkin
+from pretix.base.models import Checkin, QuestionAnswer
 from pretix.control.forms.filter import FilterForm
 
 
@@ -56,10 +55,14 @@ class TestResultsSettingsForm(SettingsForm):
         self.event = kwargs.pop("obj")
 
         self._set_field_placeholders(
-            "simple_test_results_mail_subject", ["event", "order", "position"], ["{result}"]
+            "simple_test_results_mail_subject",
+            ["event", "order", "position"],
+            ["{result}"],
         )
         self._set_field_placeholders(
-            "simple_test_results_mail_body", ["event", "order", "position"], ["{result}"]
+            "simple_test_results_mail_body",
+            ["event", "order", "position"],
+            ["{result}"],
         )
         self._set_field_placeholders(
             "simple_test_results_sms_text", ["event", "order", "position"], ["{result}"]
@@ -85,26 +88,25 @@ class TestResultsSettingsForm(SettingsForm):
 
 class AttendeeFilterForm(FilterForm):
     orders = {
-        'attendee_name': 'attendee_name_cached',
-        '-attendee_name': '-attendee_name_cached',
-        'last_checkin': 'last_checkin',
-        '-last_checkin': '-last_checkin',
+        "attendee_name": "attendee_name_cached",
+        "-attendee_name": "-attendee_name_cached",
+        "last_checkin": "last_checkin",
+        "-last_checkin": "-last_checkin",
     }
     query = forms.CharField(
-        label=_('Search query'),
-        widget=forms.TextInput(attrs={
-            'placeholder': _('Search query'),
-            'autofocus': 'autofocus'
-        }),
-        required=False
+        label=_("Search query"),
+        widget=forms.TextInput(
+            attrs={"placeholder": _("Search query"), "autofocus": "autofocus"}
+        ),
+        required=False,
     )
     state = forms.ChoiceField(
-        label=_('Status'),
+        label=_("Status"),
         choices=[
-            ('', _('Checked in and no result')),
-            ('nores', _('No result')),
+            ("", _("Checked in and no result")),
+            ("nores", _("No result")),
         ],
-        required=False
+        required=False,
     )
 
     def __init__(self, *args, **kwargs):
@@ -113,8 +115,8 @@ class AttendeeFilterForm(FilterForm):
     def filter_qs(self, qs):
         fdata = self.cleaned_data
 
-        if fdata.get('query'):
-            query = fdata.get('query')
+        if fdata.get("query"):
+            query = fdata.get("query")
             qs = qs.filter(
                 Q(secret__icontains=query)
                 | Q(attendee_name_cached__icontains=query)
@@ -123,21 +125,29 @@ class AttendeeFilterForm(FilterForm):
                 | Q(order__phone__icontains=query)
             )
 
-        has_res = Exists(QuestionAnswer.objects.filter(orderposition=OuterRef('pk'), question__identifier="test_result"))
-        cqs = Checkin.objects.filter(
-            position_id=OuterRef('pk'),
-        ).order_by().values('position_id').annotate(
-            m=Max('datetime')
-        ).values('m')
+        has_res = Exists(
+            QuestionAnswer.objects.filter(
+                orderposition=OuterRef("pk"), question__identifier="test_result"
+            )
+        )
+        cqs = (
+            Checkin.objects.filter(
+                position_id=OuterRef("pk"),
+            )
+            .order_by()
+            .values("position_id")
+            .annotate(m=Max("datetime"))
+            .values("m")
+        )
         qs = qs.annotate(last_checkin=Subquery(cqs))
-        if fdata.get('state') == 'nores':
+        if fdata.get("state") == "nores":
             qs = qs.exclude(has_res)
         else:
             qs = qs.exclude(has_res).filter(last_checkin__isnull=False)
 
-        if fdata.get('ordering'):
+        if fdata.get("ordering"):
             qs = qs.order_by(self.get_order_by())
         else:
-            qs = qs.order_by('last_checkin')
+            qs = qs.order_by("last_checkin")
 
         return qs

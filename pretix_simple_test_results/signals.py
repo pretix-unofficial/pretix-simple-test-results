@@ -3,21 +3,17 @@ from django.urls import resolve, reverse
 from django.utils.translation import gettext_noop, ugettext_lazy as _
 from i18nfield.rest_framework import I18nField
 from i18nfield.strings import LazyI18nString
-from rest_framework import serializers
-
 from pretix.base.settings import settings_hierarkey
-from pretix.base.signals import (
-    api_event_settings_fields,
-    logentry_display,
-)
-from pretix.control.signals import nav_event_settings, nav_event
+from pretix.base.signals import api_event_settings_fields, logentry_display
+from pretix.control.signals import nav_event, nav_event_settings
+from rest_framework import serializers
 
 
 @receiver(nav_event_settings, dispatch_uid="simple_test_results_nav")
 def navbar_info(sender, request, **kwargs):
     url = resolve(request.path_info)
     if not request.user.has_event_permission(
-            request.organizer, request.event, "can_change_event_settings", request=request
+        request.organizer, request.event, "can_change_event_settings", request=request
     ):
         return []
     return [
@@ -30,7 +26,8 @@ def navbar_info(sender, request, **kwargs):
                     "organizer": request.organizer.slug,
                 },
             ),
-            "active": url.namespace == "plugins:pretix_simple_test_results" and url.url_name == "settings",
+            "active": url.namespace == "plugins:pretix_simple_test_results"
+            and url.url_name == "settings",
         },
     ]
 
@@ -53,7 +50,8 @@ def navbar_action(sender, request, **kwargs):
                 },
             ),
             "icon": "check-square",
-            "active": url.namespace == "plugins:pretix_simple_test_results" and url.url_name != "settings",
+            "active": url.namespace == "plugins:pretix_simple_test_results"
+            and url.url_name != "settings",
         },
     ]
 
@@ -102,10 +100,6 @@ settings_hierarkey.add_default(
 settings_hierarkey.add_default("simple_test_results_sms", False, bool)
 settings_hierarkey.add_default(
     "simple_test_results_sms_text",
-    LazyI18nString.from_gettext(
-        gettext_noop(
-            "Your test result is: {result}"
-        )
-    ),
+    LazyI18nString.from_gettext(gettext_noop("Your test result is: {result}")),
     LazyI18nString,
 )
