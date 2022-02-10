@@ -57,15 +57,15 @@ class TestResultsSettingsForm(SettingsForm):
         self._set_field_placeholders(
             "simple_test_results_mail_subject",
             ["event", "order", "position"],
-            ["{result}"],
+            ["{result}", "{test_type}"],
         )
         self._set_field_placeholders(
             "simple_test_results_mail_body",
             ["event", "order", "position"],
-            ["{result}"],
+            ["{result}", "{test_type}"],
         )
         self._set_field_placeholders(
-            "simple_test_results_sms_text", ["event", "order", "position"], ["{result}"]
+            "simple_test_results_sms_text", ["event", "order", "position"], ["{result}", "{test_type}"]
         )
         if not can_use_juvare_api(self.event):
             self.fields.pop("simple_test_results_sms")

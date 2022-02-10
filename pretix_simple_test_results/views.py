@@ -8,7 +8,7 @@ from django.utils.translation import gettext
 from django.views.generic import DetailView, ListView
 from pretix.base.email import get_email_context
 from pretix.base.i18n import language
-from pretix.base.models import Event, OrderPosition, Question
+from pretix.base.models import Event, OrderPosition, Question, QuestionOption
 from pretix.base.services.mail import TolerantDict
 from pretix.control import context
 from pretix.control.permissions import EventPermissionRequiredMixin
@@ -71,6 +71,19 @@ class SendView(EventPermissionRequiredMixin, DetailView):
     template_name = "pretix_simple_test_results/send.html"
     context_object_name = "attendee"
 
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        type_question = self.request.event.questions.get_or_create(
+            identifier="test_type",
+            defaults={
+                "question": gettext("Test type"),
+                "type": Question.TYPE_CHOICE,
+                "hidden": True,
+            },
+        )[0]
+        ctx['type_options'] = type_question.options.all()
+        return ctx
+
     def get_queryset(self):
         qs = (
             OrderPosition.objects.select_related("order")
@@ -86,6 +99,21 @@ class SendView(EventPermissionRequiredMixin, DetailView):
         self.object = self.get_object()
         result = request.POST.get("result")
 
+        type_question = self.request.event.questions.get_or_create(
+            identifier="test_type",
+            defaults={
+                "question": gettext("Test type"),
+                "type": Question.TYPE_CHOICE,
+                "hidden": True,
+            },
+        )[0]
+
+        try:
+            selected_type = type_question.options.get(id=request.POST.get("type"))
+        except QuestionOption.DoesNotExist:
+            messages.error(request, gettext("Invalid input."))
+            return redirect(self.request.get_full_path())
+
         question = self.request.event.questions.get_or_create(
             identifier="test_result",
             defaults={
@@ -95,15 +123,23 @@ class SendView(EventPermissionRequiredMixin, DetailView):
             },
         )[0]
         question.items.add(self.object.item)
+        type_question.items.add(self.object.item)
         self.object.answers.update_or_create(
             question=question,
             defaults={
                 "answer": result,
             },
         )
+        type_answer = self.object.answers.update_or_create(
+            question=question,
+            defaults={
+                "answer": selected_type.answer,
+            },
+        )[0]
+        type_answer.options.set([selected_type])
         self.object.order.log_action(
             "pretix_simple_test_results.recorded",
-            data={"result": result},
+            data={"result": result, "type": selected_type.answer,},
             user=self.request.user,
         )
 
@@ -111,6 +147,7 @@ class SendView(EventPermissionRequiredMixin, DetailView):
             event=self.request.event, order=self.object.order, position=self.object
         )
         email_context["result"] = result
+        email_context["test_type"] = selected_type.answer
 
         if request.event.settings.simple_test_results_mail:
             with language(self.object.order.locale, self.request.event.settings.region):

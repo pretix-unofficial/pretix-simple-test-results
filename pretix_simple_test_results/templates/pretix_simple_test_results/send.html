@@ -30,8 +30,16 @@
             </dd>
         {% endfor %}
     </dl>
-    <form action="" method="post">
+    <form action="" class="form" method="post">
         {% csrf_token %}
+        <label for="type">{% trans "Test type" %}</label>
+        <select name="type" class="form-control" required>
+            <option></option>
+            {% for t in type_options %}
+                <option value="{{ t.pk }}">{{ t.answer }}</option>
+            {% endfor %}
+        </select>
+        <p>&nbsp;</p>
         <div class="row">
             <div class="col-md-4 col-sm-12">
                 <button type="submit" name="result" value="{% trans "negative" %}"

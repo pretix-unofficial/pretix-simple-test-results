@@ -1,4 +1,4 @@
-from django.utils.translation import gettext_lazy
+from django.utils.translation import gettext_lazy, gettext
 
 try:
     from pretix.base.plugins import PluginConfig
@@ -20,6 +20,27 @@ class PluginApp(PluginConfig):
         version = __version__
         category = "FEATURE"
         compatibility = "pretix>=2.7.0"
+
+    def installed(self, event):
+        from pretix.base.models import Question
+
+        event.questions.get_or_create(
+            identifier="test_result",
+            defaults={
+                "question": gettext("Test result"),
+                "type": Question.TYPE_TEXT,
+                "hidden": True,
+            },
+        )
+        q = event.questions.get_or_create(
+            identifier="test_type",
+            defaults={
+                "question": gettext("Test type"),
+                "type": Question.TYPE_CHOICE,
+                "hidden": True,
+            },
+        )[0]
+        q.options.get_or_create(answer='unknown')
 
     def ready(self):
         from . import signals  # NOQA
