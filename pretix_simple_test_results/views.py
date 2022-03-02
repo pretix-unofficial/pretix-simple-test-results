@@ -124,6 +124,8 @@ class SendView(EventPermissionRequiredMixin, DetailView):
         )[0]
         question.items.add(self.object.item)
         type_question.items.add(self.object.item)
+
+
         self.object.answers.update_or_create(
             question=question,
             defaults={
@@ -131,7 +133,7 @@ class SendView(EventPermissionRequiredMixin, DetailView):
             },
         )
         type_answer = self.object.answers.update_or_create(
-            question=question,
+            question=type_question,
             defaults={
                 "answer": selected_type.answer,
             },
@@ -185,7 +187,7 @@ class SendView(EventPermissionRequiredMixin, DetailView):
                 juvare_send_task.apply_async(
                     kwargs={
                         "text": message,
-                        "to": self.object.order.phone,
+                        "to": str(self.object.order.phone),
                         "event": self.request.event.pk,
                     }
                 )
