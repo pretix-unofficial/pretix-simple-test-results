@@ -182,7 +182,7 @@ class SendView(EventPermissionRequiredMixin, DetailView):
             with language(self.object.order.locale, self.request.event.settings.region):
                 from pretix_juvare_notify.tasks import juvare_send_task
 
-                template = self.request.event.settings.simple_test_results_sms_test
+                template = self.request.event.settings.simple_test_results_sms_text
                 message = str(template).format_map(TolerantDict(email_context))
                 juvare_send_task.apply_async(
                     kwargs={
