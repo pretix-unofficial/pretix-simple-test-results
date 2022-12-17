@@ -1,20 +1,20 @@
-from django.conf.urls import url
+from django.urls import path
 
 from .views import IndexView, SendView, SettingsView
 
 urlpatterns = [
-    url(
-        r"^control/event/(?P<organizer>[^/]+)/(?P<event>[^/]+)/settings/simple_test_results/$",
+    path(
+        "control/event/<str:organizer>/<str:event>/settings/simple_test_results/",
         SettingsView.as_view(),
         name="settings",
     ),
-    url(
-        r"^control/event/(?P<organizer>[^/]+)/(?P<event>[^/]+)/simple_test_results/$",
+    path(
+        "control/event/<str:organizer>/<str:event>/simple_test_results/",
         IndexView.as_view(),
         name="index",
     ),
-    url(
-        r"^control/event/(?P<organizer>[^/]+)/(?P<event>[^/]+)/simple_test_results/(?P<pk>[^/]+)/send/$",
+    path(
+        "control/event/<str:organizer>/<str:event>/simple_test_results/<str:pk>/send/",
         SendView.as_view(),
         name="send",
     ),
