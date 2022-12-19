@@ -8,6 +8,7 @@ except ImportError:
 
 
 class PluginApp(PluginConfig):
+    default = True
     name = "pretix_simple_test_results"
     verbose_name = "Simple Test Results"
 
